@@ -1,0 +1,117 @@
+﻿https://github.com/krkrz/krkrz/commit/bb999d8cb9eeb98d87923e795df56e17b8655a17
+
+デフォルトフォント名がストックフォント名の場合、システムからフォントを取得して、そのフォント名をデフォルトとするように変更。
+
+コマンドラインで-deffont指定がある場合、そのフォント名をデフォルトとするように変更。
+ dev_wavefilter_pluginstub (#152) last_64bit_merge (#152) last_hodgepodge_repository (#152)
+@jin1016
+jin1016 committed on 12 Sep 2014
+1 parent 083ab6c commit bb999d8cb9eeb98d87923e795df56e17b8655a17
+Showing  with 51 additions and 5 deletions.
+  
+BIN  src/core/msg/text/Messages.xlsx
+Binary file not shown.
+  
+2  src/core/vc2012/string_table_en.rc
+@@ -181,7 +181,7 @@ BEGIN
+     IDS_TVP_INFO_DONE_WITH_CONTAINS                                           "(info) Done. (contains %1 file(s), %2 segment(s))"	     IDS_TVP_INFO_DONE_WITH_CONTAINS                                           "(info) Done. (contains %1 file(s), %2 segment(s))"
+     IDS_TVP_SEPARATOR_CRLF                                                    "\r\n\r\n\r\n==============================================================================\r\n==============================================================================\r\n"	     IDS_TVP_SEPARATOR_CRLF                                                    "\r\n\r\n\r\n==============================================================================\r\n==============================================================================\r\n"
+     IDS_TVP_SEPARATOR_CR                                                      "\n\n\n==============================================================================\n==============================================================================\n"	     IDS_TVP_SEPARATOR_CR                                                      "\n\n\n==============================================================================\n==============================================================================\n"
+-    IDS_TVP_DEFAULT_FONT_NAME                                                 "MS Sans Serif"	+    IDS_TVP_DEFAULT_FONT_NAME                                                 "DEFAULT_GUI_FONT"
+     IDS_TVP_CANNOT_OPEN_FONT_FILE                                             "Can't open font file '%1$s'"	     IDS_TVP_CANNOT_OPEN_FONT_FILE                                             "Can't open font file '%1$s'"
+     IDS_TVP_FONT_CANNOT_BE_USED                                               "Font '%1$s' cannot be used"	     IDS_TVP_FONT_CANNOT_BE_USED                                               "Font '%1$s' cannot be used"
+     IDS_TVP_FONT_RASTERIZE_ERROR                                              "Font Rasterize error."	     IDS_TVP_FONT_RASTERIZE_ERROR                                              "Font Rasterize error."
+  
+7  src/core/visual/FontSystem.cpp
+@@ -8,6 +8,7 @@
+ #include <vector>	 #include <vector>
+ 	 
+ extern void TVPGetAllFontList( std::vector<std::wstring>& list );	 extern void TVPGetAllFontList( std::vector<std::wstring>& list );
++extern const tjs_char *TVPGetDefaultFontName();
+ 	 
+ void FontSystem::InitFontNames() {	 void FontSystem::InitFontNames() {
+ 	// enumlate all fonts	 	// enumlate all fonts
+@@ -45,7 +46,7 @@ void FontSystem::ConstructDefaultFont() {
+ 		DefaultFont.Height = -12;	 		DefaultFont.Height = -12;
+ 		DefaultFont.Flags = 0;	 		DefaultFont.Flags = 0;
+ 		DefaultFont.Angle = 0;	 		DefaultFont.Angle = 0;
+-		DefaultFont.Face = ttstr(TVPDefaultFontName);	+		DefaultFont.Face = ttstr(TVPGetDefaultFontName());
+ 	}	 	}
+ }	 }
+ 	 
+@@ -89,8 +90,8 @@ std::wstring FontSystem::GetBeingFont(std::wstring fonts) {
+ 	}	 	}
+ 	 
+ 	if(vfont) {	 	if(vfont) {
+-		return std::wstring(TJS_W("@")) + std::wstring(TVPDefaultFontName);	+		return std::wstring(TJS_W("@")) + std::wstring(TVPGetDefaultFontName());
+ 	} else {	 	} else {
+-		return std::wstring(TVPDefaultFontName);	+		return std::wstring(TVPGetDefaultFontName());
+ 	}	 	}
+ }	 }
+  
+47  src/core/visual/win32/TVPSysFont.cpp
+@@ -5,9 +5,54 @@
+ #include "TVPSysFont.h"	 #include "TVPSysFont.h"
+ #include "FontSystem.h"	 #include "FontSystem.h"
+ #include "MsgIntf.h"	 #include "MsgIntf.h"
++#include "SysInitIntf.h"
+ 	 
+ extern FontSystem* TVPFontSystem;	 extern FontSystem* TVPFontSystem;
+ 	 
++static bool IsInitDefalutFontName = false;
++/**
++ * ストックフォント指定の場合、システムからフォルト名を取得して、そのオブジェクトをデフォルトとする
++ */
++const tjs_char *TVPGetDefaultFontName() {
++	if( IsInitDefalutFontName ) {
++		return TVPDefaultFontName;
++	}
++
++	// コマンドラインで指定がある場合、そのフォントを使用する
++	tTJSVariant opt;
++	if(TVPGetCommandLine(TJS_W("-deffont"), &opt)) {
++		ttstr str(opt);
++		TVPDefaultFontName.AssignMessage( str.c_str() );
++	}
++	IsInitDefalutFontName =  true;
++
++	// システム定義のフォントかどうかチェックする
++	ttstr name = ttstr(TVPDefaultFontName);
++	HGDIOBJ obj = NULL;
++	if( name == ttstr(TJS_W("ANSI_FIXED_FONT")) ) {
++		obj = ::GetStockObject(ANSI_FIXED_FONT);
++	} else if( name == ttstr(TJS_W("ANSI_VAR_FONT")) ) {
++		obj = ::GetStockObject(ANSI_VAR_FONT);
++	} else if( name == ttstr(TJS_W("DEVICE_DEFAULT_FONT")) ) {
++		obj = ::GetStockObject(DEVICE_DEFAULT_FONT);
++	} else if( name == ttstr(TJS_W("DEFAULT_GUI_FONT")) ) {
++		obj = ::GetStockObject(DEFAULT_GUI_FONT);
++	} else if( name == ttstr(TJS_W("OEM_FIXED_FONT")) ) {
++		obj = ::GetStockObject(OEM_FIXED_FONT);
++	} else if( name == ttstr(TJS_W("SYSTEM_FONT")) ) {
++		obj = ::GetStockObject(SYSTEM_FONT);
++	} else if( name == ttstr(TJS_W("SYSTEM_FIXED_FONT")) ) {
++		obj = ::GetStockObject(SYSTEM_FIXED_FONT);
++	}
++	if( obj != NULL ) {
++		HFONT font = (HFONT)obj;
++		LOGFONT logfont={0};
++		::GetObject( font, sizeof(LOGFONT), &logfont );
++		TVPDefaultFontName.AssignMessage( logfont.lfFaceName );
++	}
++	return TVPDefaultFontName;
++}
++
+ void tTVPSysFont::InitializeMemDC() {	 void tTVPSysFont::InitializeMemDC() {
+ 	BITMAPINFO bmpinfo;	 	BITMAPINFO bmpinfo;
+ 	ZeroMemory( &bmpinfo, sizeof(bmpinfo) );	 	ZeroMemory( &bmpinfo, sizeof(bmpinfo) );
+@@ -34,7 +79,7 @@ tTVPSysFont::tTVPSysFont() : hFont_(INVALID_HANDLE_VALUE), hOldFont_(INVALID_HAN
+ 	logfont.lfHeight = -12;	 	logfont.lfHeight = -12;
+ 	logfont.lfWidth = 0;	 	logfont.lfWidth = 0;
+ 	logfont.lfCharSet = DEFAULT_CHARSET;	 	logfont.lfCharSet = DEFAULT_CHARSET;
+-	TJS_strncpy_s( logfont.lfFaceName, LF_FACESIZE, TVPDefaultFontName, LF_FACESIZE );	+	TJS_strncpy_s( logfont.lfFaceName, LF_FACESIZE, TVPGetDefaultFontName(), LF_FACESIZE );
+ 	logfont.lfItalic = FALSE;	 	logfont.lfItalic = FALSE;
+ 	logfont.lfUnderline = FALSE;	 	logfont.lfUnderline = FALSE;
+ 	logfont.lfStrikeOut = FALSE;	 	logfont.lfStrikeOut = FALSE;
+ 	
+ 	

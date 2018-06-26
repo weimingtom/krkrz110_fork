@@ -1,0 +1,123 @@
+------------------------
+(1)
+	//FIXME:
+	// -- Cr0NpxState
+	TJS_snprintf(buf, BUF_SIZE,TJS_W("FP CR0 NPX State  : 0x%08X"), 0/*ctx.FloatSave.Cr0NpxState*/);
+	
+------------------------
+(2)
+		stBInfo.pidlRoot = NULL;
+		stBInfo.hwndOwner = NULL;
+		stBInfo.pszDisplayName = chPutFolder;
+		stBInfo.lpszTitle = TVPSelectXP3FileOrFolder;
+		stBInfo.ulFlags = BIF_BROWSEINCLUDEFILES|BIF_RETURNFSANCESTORS|BIF_DONTGOBELOWDOMAIN|BIF_RETURNONLYFSDIRS;
+#if _MSC_VER <= 1600
+		stBInfo.ulFlags |= BIF_EDITBOX;
+#endif
+
+------------------------
+(3)
+ttstr TVPGetSavedGamesPath()
+{
+	ttstr path;
+	PWSTR ppszPath = NULL;
+#if _MSC_VER <= 1600
+	WCHAR szAppDataPathBuffer[MAX_PATH] = {0};
+	path = szAppDataPathBuffer;
+	::SHGetSpecialFolderPathW(NULL, szAppDataPathBuffer, CSIDL_PERSONAL, FALSE);
+	wcscat(szAppDataPathBuffer, L"\\My Saved Games");
+    ::CreateDirectory(szAppDataPathBuffer, NULL);
+#else
+	HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_SavedGames, 0, NULL, &ppszPath);
+	if( hr == S_OK ) {
+		path = ppszPath;
+		::CoTaskMemFree( ppszPath );
+	}
+#endif
+
+------------------------
+(4)
+	static inline std::wstring GetSavedGamesPath() {
+		std::wstring result;
+		PWSTR ppszPath = NULL;
+#if _MSC_VER <= 1600
+		WCHAR szAppDataPathBuffer[MAX_PATH] = {0};
+		::SHGetSpecialFolderPathW(NULL, szAppDataPathBuffer, CSIDL_PERSONAL, FALSE);
+		wcscat(szAppDataPathBuffer, L"\\My Saved Games");
+		::CreateDirectory(szAppDataPathBuffer, NULL);
+		result = std::wstring(szAppDataPathBuffer);
+#else
+		HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_SavedGames, 0, NULL, &ppszPath);
+		if( hr == S_OK ) {
+			result = std::wstring(ppszPath);
+			::CoTaskMemFree( ppszPath );
+		}
+#endif
+
+------------------------
+(5)
+#ifdef WIN32
+			if(str == TJS_W("globalalloc"))
+				Allocator = new GlobalAllocAllocator();
+			else if(str == TJS_W("separateheap"))
+				Allocator = new HeapAllocAllocator();
+			else    // malloc
+#endif
+				Allocator = new BasicAllocator();
+		} else {
+#ifdef WIN32
+#if _MSC_VER <= 1600
+//			Allocator = new BasicAllocator();
+			Allocator = new GlobalAllocAllocator();
+//			Allocator = new HeapAllocAllocator();
+#else
+			Allocator = new GlobalAllocAllocator();
+#endif
+#else
+			Allocator = new BasicAllocator();
+#endif
+
+------------------------
+(6) id_
+class TVPTimer {
+	HWND		window_handle_;
+	WNDCLASSEX	wc_;
+
+	TVPTimerEventIntarface* event_;
+	int		interval_;
+	bool	enabled_;
+	UINT_PTR id_;
+//...
+TVPTimer::TVPTimer() : event_(NULL), interval_(1000), enabled_(true), id_(0) {
+	CreateUtilWindow();
+}
+//...
+LRESULT WINAPI TVPTimer::WndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam ) {
+	if( msg == WM_TIMER ) {
+		TVPTimer *win = reinterpret_cast<TVPTimer*>(::GetWindowLongPtr(hWnd,GWLP_USERDATA));
+		if( win != NULL ) {
+			win->FireEvent();
+			return 1;
+		}
+	}
+	return ::DefWindowProc(hWnd,msg,wParam,lParam);
+}
+void TVPTimer::UpdateTimer() {
+	if(id_ != 0 && ::KillTimer( window_handle_, id_ ) == 0 ) {
+#ifdef _DEBUG
+		TVP_WINDOWS_ERROR_LOG;
+#endif
+	}
+	if( interval_ > 0 && enabled_ && event_ != NULL ) {
+		if( (id_ = ::SetTimer( window_handle_, 1, interval_, NULL )) == 0 ) {
+			TVPThrowWindowsErrorException();
+		}
+	}
+}
+
+------------------------
+(7) *.h,*.c,*.cpp->UTF-8 BOM, *.rc->Unicode BOM
+
+
+------------------------
+

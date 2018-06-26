@@ -1,0 +1,3 @@
+﻿				if(mark[0] == 0xef && mark[1] == 0xbb && mark2[0] == 0xbf) {
+					// UTF-8 BOM
+					
