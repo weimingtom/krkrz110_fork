@@ -1,3 +1,4 @@
+core/external/jpeg-6bx/jsimdcfg.inc
 *.lib
 lib/
 objs/
