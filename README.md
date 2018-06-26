@@ -14,6 +14,6 @@ https://github.com/krkrz/krkrz/releases/tag/v1.1.0
 https://github.com/krkrz/kag3  
 
 ## History  
-* 2018-06-26: Github  
+* 2018-06-26: Github, remove plugins    
 * 2018-06-25: Font bug  
 * 2018-06-23: VS2010  
