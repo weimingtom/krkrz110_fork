@@ -37,3 +37,6 @@ https://code.google.com/archive/p/the-nvl-maker-ex/
 * KAGEX1指令文档  
 http://www.nvlmaker.net/manual/docs/kagex.html  
 
+* 吉里吉里1/吉里吉里2中KAG脚本的解释执行(1)  
+http://rednaxelafx.iteye.com/blog/136454  
+
