@@ -1,4 +1,4 @@
-* (勝手に)吉里吉里Z移行ガイド
+* (勝手に)吉里吉里Z移行ガイド  
 http://www.geocities.co.jp/keep_creating/DojinDOC/Migration_to_KRKRZ.html  
 吉里吉里Zでの吉里吉里2からの変更点一覧  
 http://krkrz.github.io/updatefromkr2.html  
